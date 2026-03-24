@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zenith Manga | Galeria Premium de HQs</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="crackrool.css">
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <a href="#" class="logo">
+            <i class="fas fa-dragon"></i>
+            Zenith Manga
+        </a>
+        <div class="header-right">
+            <div class="search-container">
+                <i class="fas fa-search"></i>
+                <input type="text" id="searchInput" class="search-box" placeholder="Buscar sua HQ favorita..." onkeyup="searchManga()">
+            </div>
+            <div class="header-icons">
+                <i class="fas fa-heart" title="Favoritos"></i>
+                <i class="fas fa-bookmark" title="Marcar para depois"></i>
+                <i class="fas fa-bell" title="Notificações"></i>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero -->
+    <section class="hero">
+        <div>
+            <h1>Descubra o <br>Universo dos Mangás</h1>
+            <p>Milhares de HQs e mangás em alta qualidade. Leitura fluida e interface moderna.</p>
+            <div class="cta-buttons">
+                <a href="#" class="btn btn-primary" onclick="loadRandomHQ()">
+                    <i class="fas fa-play"></i> Ler Agora
+                </a>
+                <a href="#" class="btn btn-secondary">
+                    <i class="fas fa-crown"></i> Premium
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Filters -->
+    <div class="filter-bar" id="filterBar">
+        <button class="filter-btn active" onclick="filterManga('Todos')">Todos</button>
+        <button class="filter-btn" onclick="filterManga('Ação')">Ação</button>
+        <button class="filter-btn" onclick="filterManga('Aventura')">Aventura</button>
+        <button class="filter-btn" onclick="filterManga('Terror')">Terror</button>
+        <button class="filter-btn" onclick="filterManga('Sci-Fi')">Sci-Fi</button>
+        <button class="filter-btn" onclick="filterManga('Romance')">Romance</button>
+        <button class="filter-btn" onclick="filterManga('Fantasia')">Fantasia</button>
+    </div>
+
+    <!-- Grid -->
+    <div class="container">
+        <div class="manga-grid" id="manga-list">
+            <div class="loading">
+                <div class="spinner"></div>
+                <p>Carregando biblioteca...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reader Modal -->
+    <div id="reader">
+        <div class="reader-container">
+            <div class="reader-header">
+                <h3 class="reader-title" id="reader-title">Título do Mangá</h3>
+                <div class="reader-controls">
+                    <button class="reader-btn prev-page" onclick="prevPage()">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <span id="page-counter">1 / 10</span>
+                    <button class="reader-btn next-page" onclick="nextPage()">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                    <button class="reader-btn fullscreen" onclick="toggleFullscreen()">
+                        <i class="fas fa-expand"></i>
+                    </button>
+                    <button class="reader-btn close-reader" onclick="closeReader()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <div id="pages-container" class="reader-pages"></div>
+        </div>
+    </div>
+    <script>
+
+    // 1. Banco de Dados de Exemplo (Capas que funcionam)
+    const biblioteca = [
+        { id: 1, title: "Solo Leveling", genre: "Ação", views: "2.4M", chapters: 179, img: "https://images.unsplash.com/photo-1618336753974-aae8e04506aa?w=500&q=80" },
+        { id: 2, title: "The Cosmic Voyager", genre: "Sci-Fi", views: "850K", chapters: 45, img: "https://images.unsplash.com/photo-1614728263952-84ea256f9679?w=500&q=80" },
+        { id: 3, title: "Ghost in the Shell", genre: "Terror", views: "1.2M", chapters: 12, img: "https://images.unsplash.com/photo-1509248961158-e54f6934749c?w=500&q=80" },
+        { id: 4, title: "Ancient Kingdom", genre: "Fantasia", views: "3.1M", chapters: 250, img: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&q=80" },
+        { id: 5, title: "Urban Legend", genre: "Terror", views: "500K", chapters: 30, img: "https://images.unsplash.com/photo-1505635330303-d3f146aa1644?w=500&q=80" },
+        { id: 6, title: "Neon Samurai", genre: "Ação", views: "1.5M", chapters: 88, img: "https://images.unsplash.com/photo-1559535332-db9971090158?w=500&q=80" },
+        { id: 7, title: "Eternal Romance", genre: "Romance", views: "900K", chapters: 102, img: "https://images.unsplash.com/photo-1516589174184-c685266ec7ad?w=500&q=80" },
+        { id: 8, title: "Sky Island", genre: "Aventura", views: "2.1M", chapters: 500, img: "https://images.unsplash.com/photo-1526170315870-efdee0fd3a50?w=500&q=80" }
+    ];
+
+    let currentPage = 1;
+    let currentManga = null;
+
+    // 2. Função para Renderizar os Cards na Tela
+    function render(lista) {
+        const grid = document.getElementById('manga-list');
+        
+        if (lista.length === 0) {
+            grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 50px; opacity: 0.5;">
+                                <i class="fas fa-search" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                                <p>Nenhum título encontrado com esse nome.</p>
+                              </div>`;
+            return;
+        }
+
+        grid.innerHTML = lista.map(m => `
+            <div class="manga-card" onclick="openReader('${m.title}')">
+                <img src="${m.img}" class="manga-poster" alt="${m.title}">
+                <div class="manga-overlay">
+                    <span class="manga-genre">${m.genre}</span>
+                    <h3 class="manga-title">${m.title}</h3>
+                    <div class="manga-stats">
+                        <span><i class="fas fa-eye"></i> ${m.views}</span>
+                        <span><i class="fas fa-book-open"></i> ${m.chapters} Cap.</span>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    // 3. Sistema de Filtro por Categoria
+    function filterManga(genre) {
+        // Atualiza a classe 'active' nos botões
+        const buttons = document.querySelectorAll('.filter-btn');
+        buttons.forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.innerText === genre) btn.classList.add('active');
+        });
+
+        const filtrados = genre === 'Todos' 
+            ? biblioteca 
+            : biblioteca.filter(m => m.genre === genre);
+        
+        render(filtrados);
+    }
+
+    // 4. Sistema de Busca em Tempo Real
+    function searchManga() {
+        const term = document.getElementById('searchInput').value.toLowerCase();
+        const filtrados = biblioteca.filter(m => 
+            m.title.toLowerCase().includes(term) || 
+            m.genre.toLowerCase().includes(term)
+        );
+        render(filtrados);
+    }
+
+    // 5. Lógica do Leitor (Reader)
+    function openReader(title) {
+        currentManga = title;
+        currentPage = 1;
+        document.getElementById('reader-title').innerText = title;
+        document.getElementById('reader').style.display = 'block';
+        document.body.style.overflow = 'hidden'; // Trava o scroll da página principal
+        updatePage();
+    }
+
+    function closeReader() {
+        document.getElementById('reader').style.display = 'none';
+        document.body.style.overflow = 'auto';
+    }
+
+    function updatePage() {
+        const container = document.getElementById('pages-container');
+        const counter = document.getElementById('page-counter');
+        
+        // Simulação de páginas (trocando apenas a imagem)
+        container.innerHTML = `
+            <div class="reader-page">
+                <img src="https://picsum.photos/seed/${currentManga + currentPage}/800/1200" alt="Página ${currentPage}">
+            </div>
+        `;
+        counter.innerText = `${currentPage} / 20`;
+        
+        // Scroll suave para o topo do leitor ao trocar página
+        document.getElementById('reader').scrollTo({top: 0, behavior: 'smooth'});
+    }
+
+    function nextPage() {
+        if (currentPage < 20) {
+            currentPage++;
+            updatePage();
+        }
+    }
+
+    function prevPage() {
+        if (currentPage > 1) {
+            currentPage--;
+            updatePage();
+        }
+    }
+
+    // Atalhos do Teclado para o Leitor
+    window.addEventListener('keydown', (e) => {
+        if (document.getElementById('reader').style.display === 'block') {
+            if (e.key === 'ArrowRight') nextPage();
+            if (e.key === 'ArrowLeft') prevPage();
+            if (e.key === 'Escape') closeReader();
+        }
+    });
+
+    // Função Extra: Carregar HQ Aleatória (Botão do Hero)
+    function loadRandomHQ() {
+        const random = biblioteca[Math.floor(Math.random() * biblioteca.length)];
+        openReader(random.title);
+    }
+
+    // Inicialização - Carrega tudo ao abrir a página
+    window.onload = () => {
+        setTimeout(() => { // Delayzinho para simular carregamento
+            render(biblioteca);
+        }, 800);
+    };
+    </script>
